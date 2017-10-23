@@ -55,6 +55,8 @@ import android.widget.Toast;
  * 
  * @author hongming.wang
  * @since 3.2.0
+ *
+ * 圆形地理围栏！
  */
 public class GeoFence_Round_Activity extends CheckPermissionsActivity
 		implements
