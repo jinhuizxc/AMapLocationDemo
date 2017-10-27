@@ -84,17 +84,17 @@
             >
         </activity>
         <activity
-            android:name="com.amap.location.demo.GeoFence_Activity"
+            android:name="com.amap.location.demo.fence.GeoFence_Activity"
             android:windowSoftInputMode="adjustResize|stateHidden"
             android:configChanges="keyboardHidden|orientation|screenSize"
             >
         </activity>
-         <activity
-            android:name="com.amap.location.demo.GeoFence_Old_Activity"
-            android:windowSoftInputMode="adjustResize|stateHidden"
-            android:configChanges="keyboardHidden|orientation|screenSize"
-            >
-        </activity>
+         <!--<activity-->
+            <!--android:name="com.amap.location.demo.GeoFence_Old_Activity"-->
+            <!--android:windowSoftInputMode="adjustResize|stateHidden"-->
+            <!--android:configChanges="keyboardHidden|orientation|screenSize"-->
+            <!--&gt;-->
+        <!--</activity>-->
         <activity
             android:name="com.amap.location.demo.Assistant_Location_Activity"
             android:windowSoftInputMode="adjustResize|stateHidden"
@@ -120,37 +120,37 @@
             >
         </activity>
         <activity
-            android:name="com.amap.location.demo.GeoFence_Round_Activity"
+            android:name="com.amap.location.demo.fence.GeoFence_Round_Activity"
             android:windowSoftInputMode="adjustResize|stateHidden"
             android:configChanges="keyboardHidden|orientation|screenSize"
             >
         </activity>
         <activity
-            android:name="com.amap.location.demo.GeoFence_Polygon_Activity"
+            android:name="com.amap.location.demo.fence.GeoFence_Polygon_Activity"
             android:windowSoftInputMode="adjustResize|stateHidden"
             android:configChanges="keyboardHidden|orientation|screenSize"
             >
         </activity>
         <activity
-            android:name="com.amap.location.demo.GeoFence_Keyword_Activity"
+            android:name="com.amap.location.demo.fence.GeoFence_Keyword_Activity"
             android:windowSoftInputMode="adjustResize|stateHidden"
             android:configChanges="keyboardHidden|orientation|screenSize"
             >
         </activity>
         <activity
-            android:name="com.amap.location.demo.GeoFence_Nearby_Activity"
+            android:name="com.amap.location.demo.fence.GeoFence_Nearby_Activity"
             android:windowSoftInputMode="adjustResize|stateHidden"
             android:configChanges="keyboardHidden|orientation|screenSize"
             >
         </activity>
         <activity
-            android:name="com.amap.location.demo.GeoFence_District_Activity"
+            android:name="com.amap.location.demo.fence.GeoFence_District_Activity"
             android:windowSoftInputMode="adjustResize|stateHidden"
             android:configChanges="keyboardHidden|orientation|screenSize"
             >
         </activity>
         <activity
-            android:name="com.amap.location.demo.GeoFence_Multiple_Activity"
+            android:name="com.amap.location.demo.fence.GeoFence_Multiple_Activity"
             android:windowSoftInputMode="adjustResize|stateHidden"
             android:configChanges="keyboardHidden|orientation|screenSize"
             >

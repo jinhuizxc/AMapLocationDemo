@@ -1,5 +1,5 @@
 
-package com.amap.location.demo;
+package com.amap.location.demo.fence;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,14 +18,15 @@ import com.amap.api.maps.AMap;
 import com.amap.api.maps.CameraUpdateFactory;
 import com.amap.api.maps.LocationSource;
 import com.amap.api.maps.MapView;
-import com.amap.api.maps.model.BitmapDescriptor;
 import com.amap.api.maps.model.BitmapDescriptorFactory;
 import com.amap.api.maps.model.CircleOptions;
 import com.amap.api.maps.model.LatLng;
 import com.amap.api.maps.model.LatLngBounds;
-import com.amap.api.maps.model.MarkerOptions;
 import com.amap.api.maps.model.MyLocationStyle;
 import com.amap.api.maps.model.PolygonOptions;
+import com.amap.location.demo.CheckPermissionsActivity;
+import com.amap.location.demo.Const;
+import com.amap.location.demo.R;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -49,12 +50,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 /**
- * 新版地理围栏
+ * 行政区划地理围栏
  * 
  * @author hongming.wang
  * @since 3.2.0
  */
-public class GeoFence_Keyword_Activity extends CheckPermissionsActivity
+public class GeoFence_District_Activity extends CheckPermissionsActivity
 		implements
 			OnClickListener,
 			GeoFenceListener,
@@ -63,21 +64,16 @@ public class GeoFence_Keyword_Activity extends CheckPermissionsActivity
 			OnCheckedChangeListener {
 
 	private View lyOption;
-	
 	private TextView tvResult;
-	
+
 	private EditText etCustomId;
-	private EditText etPoiType;
 	private EditText etKeyword;
-	private EditText etCity;
-	private EditText etFenceSize;
-	
+
 	private CheckBox cbAlertIn;
 	private CheckBox cbAlertOut;
 	private CheckBox cbAldertStated;
-	
+
 	private Button btAddFence;
-	private Button btOption;
 
 	/**
 	 * 用于显示当前的位置
@@ -92,42 +88,33 @@ public class GeoFence_Keyword_Activity extends CheckPermissionsActivity
 	private MapView mMapView;
 	private AMap mAMap;
 
-
+	// 记录已经添加成功的围栏
+	private HashMap<String, GeoFence> fenceMap = new HashMap<String, GeoFence>();
 	// 当前的坐标点集合，主要用于进行地图的可视区域的缩放
 	private LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
 
 	// 地理围栏客户端
-	private GeoFenceClient fenceClient = null;
-	// 触发地理围栏的行为，默认为进入提醒
-	private int activatesAction = GeoFenceClient.GEOFENCE_IN;
-	// 地理围栏的广播action
-	static final String GEOFENCE_BROADCAST_ACTION = "com.example.geofence.keyword";
+	GeoFenceClient fenceClient = null;
 
-	// 记录已经添加成功的围栏
-	private HashMap<String, GeoFence> fenceMap = new HashMap<String, GeoFence>();
-	
-	// 中心点marker
-	private MarkerOptions markerOption = null;
-	private BitmapDescriptor ICON_RED = BitmapDescriptorFactory
-			.defaultMarker(BitmapDescriptorFactory.HUE_RED);
-	
+	// 触发地理围栏的行为，默认为进入提醒
+	int activatesAction = GeoFenceClient.GEOFENCE_IN;
+	// 地理围栏的广播action
+	static final String GEOFENCE_BROADCAST_ACTION = "com.example.geofence.district";
+
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_geofence_new);
-		setTitle(R.string.keywordGeoFence);
+		setTitle(R.string.districtGeoFence);
 		// 初始化地理围栏
 		fenceClient = new GeoFenceClient(getApplicationContext());
 
 		lyOption = findViewById(R.id.ly_option);
 		btAddFence = (Button) findViewById(R.id.bt_addFence);
-		btOption = (Button) findViewById(R.id.bt_option);
 		tvResult = (TextView) findViewById(R.id.tv_result);
 		tvResult.setVisibility(View.GONE);
+
 		etCustomId = (EditText) findViewById(R.id.et_customId);
-		etCity = (EditText) findViewById(R.id.et_city);
-		etPoiType = (EditText) findViewById(R.id.et_poitype);
 		etKeyword = (EditText) findViewById(R.id.et_keyword);
-		etFenceSize = (EditText) findViewById(R.id.et_fenceSize);
 
 		cbAlertIn = (CheckBox) findViewById(R.id.cb_alertIn);
 		cbAlertOut = (CheckBox) findViewById(R.id.cb_alertOut);
@@ -135,7 +122,6 @@ public class GeoFence_Keyword_Activity extends CheckPermissionsActivity
 
 		mMapView = (MapView) findViewById(R.id.map);
 		mMapView.onCreate(savedInstanceState);
-		markerOption = new MarkerOptions().draggable(true);
 		init();
 	}
 
@@ -147,13 +133,10 @@ public class GeoFence_Keyword_Activity extends CheckPermissionsActivity
 			setUpMap();
 		}
 
-		lyOption.setVisibility(View.GONE);
-		btOption.setText(getString(R.string.showOption));
 		resetView();
-		resetView_keyword();
+		resetView_district();
 
 		btAddFence.setOnClickListener(this);
-		btOption.setOnClickListener(this);
 		cbAlertIn.setOnCheckedChangeListener(this);
 		cbAlertOut.setOnCheckedChangeListener(this);
 		cbAldertStated.setOnCheckedChangeListener(this);
@@ -162,6 +145,7 @@ public class GeoFence_Keyword_Activity extends CheckPermissionsActivity
 				ConnectivityManager.CONNECTIVITY_ACTION);
 		filter.addAction(GEOFENCE_BROADCAST_ACTION);
 		registerReceiver(mGeoFenceReceiver, filter);
+		
 		/**
 		 * 创建pendingIntent
 		 */
@@ -171,6 +155,10 @@ public class GeoFence_Keyword_Activity extends CheckPermissionsActivity
 		 * 设置地理围栏的触发行为,默认为进入
 		 */
 		fenceClient.setActivateAction(GeoFenceClient.GEOFENCE_IN);
+	}
+
+	private void resetView() {
+		lyOption.setVisibility(View.VISIBLE);
 	}
 
 	/**
@@ -251,18 +239,6 @@ public class GeoFence_Keyword_Activity extends CheckPermissionsActivity
 			case R.id.bt_addFence :
 				addFence();
 				break;
-			case R.id.bt_option :
-				if (btOption.getText().toString()
-						.equals(getString(R.string.showOption))) {
-					lyOption.setVisibility(View.VISIBLE);
-					btOption.setText(getString(R.string.hideOption));
-				} else {
-					lyOption.setVisibility(View.GONE);
-					btOption.setText(getString(R.string.showOption));
-				}
-				break;
-			default :
-				break;
 		}
 	}
 
@@ -341,7 +317,6 @@ public class GeoFence_Keyword_Activity extends CheckPermissionsActivity
 			}
 		}.start();
 	}
-
 
 	Handler handler = new Handler() {
 		public void handleMessage(Message msg) {
@@ -527,17 +502,8 @@ public class GeoFence_Keyword_Activity extends CheckPermissionsActivity
 		}
 	}
 
-	void resetView() {
-		lyOption.setVisibility(View.VISIBLE);
-		btOption.setVisibility(View.VISIBLE);
-		btOption.setText(getResources().getString(R.string.hideOption));
-	}
-
-	private void resetView_keyword() {
+	private void resetView_district() {
 		etKeyword.setVisibility(View.VISIBLE);
-		etPoiType.setVisibility(View.VISIBLE);
-		etCity.setVisibility(View.VISIBLE);
-		etFenceSize.setVisibility(View.VISIBLE);
 	}
 
 	/**
@@ -548,37 +514,24 @@ public class GeoFence_Keyword_Activity extends CheckPermissionsActivity
 	 *
 	 */
 	private void addFence() {
-		addKeywordFence();
+		addDistrictFence();
 	}
 
-
 	/**
-	 * 添加关键字围栏
+	 * 添加行政区划围栏
 	 * 
 	 * @since 3.2.0
 	 * @author hongming.wang
 	 *
 	 */
-	private void addKeywordFence() {
-		String customId = etCustomId.getText().toString();
+	private void addDistrictFence() {
 		String keyword = etKeyword.getText().toString();
-		String city = etCity.getText().toString();
-		String poiType = etPoiType.getText().toString();
-		String sizeStr = etFenceSize.getText().toString();
-		int size = 10;
-		if (!TextUtils.isEmpty(sizeStr)) {
-			try {
-				size = Integer.parseInt(sizeStr);
-			} catch (Throwable e) {
-			}
-		}
-
-		if ((TextUtils.isEmpty(keyword)&&TextUtils.isEmpty(poiType)) 
-				|| TextUtils.isEmpty(poiType)) {
+		String customId = etCustomId.getText().toString();
+		if (TextUtils.isEmpty(keyword)) {
 			Toast.makeText(getApplicationContext(), "参数不全", Toast.LENGTH_SHORT)
 					.show();
 			return;
 		}
-		fenceClient.addGeoFence(keyword, poiType, city, size, customId);
+		fenceClient.addGeoFence(keyword, customId);
 	}
 }

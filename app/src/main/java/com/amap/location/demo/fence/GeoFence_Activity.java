@@ -1,5 +1,6 @@
-package com.amap.location.demo;
+package com.amap.location.demo.fence;
 
+import com.amap.location.demo.R;
 import com.amap.location.demo.view.FeatureView;
 
 import android.app.ListActivity;

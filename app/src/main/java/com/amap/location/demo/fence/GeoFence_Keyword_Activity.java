@@ -1,5 +1,5 @@
 
-package com.amap.location.demo;
+package com.amap.location.demo.fence;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,7 +15,6 @@ import com.amap.api.location.AMapLocationClientOption.AMapLocationMode;
 import com.amap.api.location.AMapLocationListener;
 import com.amap.api.location.DPoint;
 import com.amap.api.maps.AMap;
-import com.amap.api.maps.AMap.OnMapClickListener;
 import com.amap.api.maps.CameraUpdateFactory;
 import com.amap.api.maps.LocationSource;
 import com.amap.api.maps.MapView;
@@ -24,11 +23,12 @@ import com.amap.api.maps.model.BitmapDescriptorFactory;
 import com.amap.api.maps.model.CircleOptions;
 import com.amap.api.maps.model.LatLng;
 import com.amap.api.maps.model.LatLngBounds;
-import com.amap.api.maps.model.Marker;
 import com.amap.api.maps.model.MarkerOptions;
 import com.amap.api.maps.model.MyLocationStyle;
 import com.amap.api.maps.model.PolygonOptions;
-import com.amap.api.maps.model.Text;
+import com.amap.location.demo.CheckPermissionsActivity;
+import com.amap.location.demo.Const;
+import com.amap.location.demo.R;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -52,34 +52,33 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 /**
- * 周边地理围栏
+ * 新版地理围栏
  * 
  * @author hongming.wang
  * @since 3.2.0
  */
-public class GeoFence_Nearby_Activity extends CheckPermissionsActivity
+public class GeoFence_Keyword_Activity extends CheckPermissionsActivity
 		implements
 			OnClickListener,
 			GeoFenceListener,
-			OnMapClickListener,
 			LocationSource,
 			AMapLocationListener,
 			OnCheckedChangeListener {
 
 	private View lyOption;
-	private TextView tvGuide;
+	
 	private TextView tvResult;
-
+	
 	private EditText etCustomId;
-	private EditText etRadius;
 	private EditText etPoiType;
 	private EditText etKeyword;
+	private EditText etCity;
 	private EditText etFenceSize;
-
+	
 	private CheckBox cbAlertIn;
 	private CheckBox cbAlertOut;
 	private CheckBox cbAldertStated;
-
+	
 	private Button btAddFence;
 	private Button btOption;
 
@@ -95,47 +94,40 @@ public class GeoFence_Nearby_Activity extends CheckPermissionsActivity
 
 	private MapView mMapView;
 	private AMap mAMap;
-	// 中心点坐标
-	private LatLng centerLatLng = null;
 
-	private List<Marker> markerList = new ArrayList<Marker>();
 
 	// 当前的坐标点集合，主要用于进行地图的可视区域的缩放
-	LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
-
-	// 中心点marker
-	private Marker centerMarker;
-	private BitmapDescriptor ICON_YELLOW = BitmapDescriptorFactory
-			.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW);
-	private BitmapDescriptor ICON_RED = BitmapDescriptorFactory
-			.defaultMarker(BitmapDescriptorFactory.HUE_RED);
-	private MarkerOptions markerOption = null;
+	private LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
 
 	// 地理围栏客户端
-	GeoFenceClient fenceClient = null;
+	private GeoFenceClient fenceClient = null;
 	// 触发地理围栏的行为，默认为进入提醒
-	int activatesAction = GeoFenceClient.GEOFENCE_IN;
+	private int activatesAction = GeoFenceClient.GEOFENCE_IN;
 	// 地理围栏的广播action
-	static final String GEOFENCE_BROADCAST_ACTION = "com.example.geofence.nearby";
+	static final String GEOFENCE_BROADCAST_ACTION = "com.example.geofence.keyword";
 
 	// 记录已经添加成功的围栏
-	HashMap<String, GeoFence> fenceMap = new HashMap<String, GeoFence>();
-
+	private HashMap<String, GeoFence> fenceMap = new HashMap<String, GeoFence>();
+	
+	// 中心点marker
+	private MarkerOptions markerOption = null;
+	private BitmapDescriptor ICON_RED = BitmapDescriptorFactory
+			.defaultMarker(BitmapDescriptorFactory.HUE_RED);
+	
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_geofence_new);
-		setTitle(R.string.nearbyGeoFence);
+		setTitle(R.string.keywordGeoFence);
 		// 初始化地理围栏
 		fenceClient = new GeoFenceClient(getApplicationContext());
 
 		lyOption = findViewById(R.id.ly_option);
 		btAddFence = (Button) findViewById(R.id.bt_addFence);
 		btOption = (Button) findViewById(R.id.bt_option);
-		tvGuide = (TextView) findViewById(R.id.tv_guide);
 		tvResult = (TextView) findViewById(R.id.tv_result);
 		tvResult.setVisibility(View.GONE);
 		etCustomId = (EditText) findViewById(R.id.et_customId);
-		etRadius = (EditText) findViewById(R.id.et_radius);
+		etCity = (EditText) findViewById(R.id.et_city);
 		etPoiType = (EditText) findViewById(R.id.et_poitype);
 		etKeyword = (EditText) findViewById(R.id.et_keyword);
 		etFenceSize = (EditText) findViewById(R.id.et_fenceSize);
@@ -161,7 +153,7 @@ public class GeoFence_Nearby_Activity extends CheckPermissionsActivity
 		lyOption.setVisibility(View.GONE);
 		btOption.setText(getString(R.string.showOption));
 		resetView();
-		resetView_nearby();
+		resetView_keyword();
 
 		btAddFence.setOnClickListener(this);
 		btOption.setOnClickListener(this);
@@ -184,18 +176,12 @@ public class GeoFence_Nearby_Activity extends CheckPermissionsActivity
 		fenceClient.setActivateAction(GeoFenceClient.GEOFENCE_IN);
 	}
 
-	private void resetView() {
-		lyOption.setVisibility(View.VISIBLE);
-		btOption.setVisibility(View.VISIBLE);
-		btOption.setText(getResources().getString(R.string.hideOption));
-	}
-
 	/**
 	 * 设置一些amap的属性
 	 */
 	private void setUpMap() {
-		mAMap.setOnMapClickListener(this);
 		mAMap.setLocationSource(this);// 设置定位监听
+		mAMap.getUiSettings().setMyLocationButtonEnabled(true);// 设置默认定位按钮是否显示
 		// 自定义系统定位蓝点
 		MyLocationStyle myLocationStyle = new MyLocationStyle();
 		// 自定义定位蓝点图标
@@ -300,8 +286,6 @@ public class GeoFence_Nearby_Activity extends CheckPermissionsActivity
 		// 设置所有maker显示在当前可视区域地图中
 		LatLngBounds bounds = boundsBuilder.build();
 		mAMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 150));
-
-		removeMarkers();
 	}
 
 	private void drawCircle(GeoFence fence) {
@@ -360,6 +344,7 @@ public class GeoFence_Nearby_Activity extends CheckPermissionsActivity
 			}
 		}.start();
 	}
+
 
 	Handler handler = new Handler() {
 		public void handleMessage(Message msg) {
@@ -454,16 +439,6 @@ public class GeoFence_Nearby_Activity extends CheckPermissionsActivity
 		}
 	};
 
-	@Override
-	public void onMapClick(LatLng latLng) {
-		markerOption.icon(ICON_YELLOW);
-		centerLatLng = latLng;
-		addCenterMarker(centerLatLng);
-		tvGuide.setBackgroundColor(getResources().getColor(R.color.gary));
-		tvGuide.setText("选中的坐标：" + centerLatLng.longitude + ","
-				+ centerLatLng.latitude);
-	}
-
 	/**
 	 * 定位成功后回调函数
 	 */
@@ -517,38 +492,6 @@ public class GeoFence_Nearby_Activity extends CheckPermissionsActivity
 		mlocationClient = null;
 	}
 
-	private void resetView_nearby() {
-		tvGuide.setText("请点击地图选择中心点");
-		etRadius.setHint("周边半径");
-		tvGuide.setVisibility(View.VISIBLE);
-		etKeyword.setVisibility(View.VISIBLE);
-		etRadius.setVisibility(View.VISIBLE);
-		etPoiType.setVisibility(View.VISIBLE);
-		etFenceSize.setVisibility(View.VISIBLE);
-	}
-
-	private void addCenterMarker(LatLng latlng) {
-		if(null == centerMarker){
-			centerMarker = mAMap.addMarker(markerOption);
-		}
-		centerMarker.setPosition(latlng);
-		centerMarker.setVisible(true);
-		markerList.add(centerMarker);
-	}
-
-	private void removeMarkers() {
-		if(null != centerMarker){
-			centerMarker.remove();
-			centerMarker = null;
-		}
-		if (null != markerList && markerList.size() > 0) {
-			for (Marker marker : markerList) {
-				marker.remove();
-			}
-			markerList.clear();
-		}
-	}
-
 	@Override
 	public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 		switch (buttonView.getId()) {
@@ -587,6 +530,19 @@ public class GeoFence_Nearby_Activity extends CheckPermissionsActivity
 		}
 	}
 
+	void resetView() {
+		lyOption.setVisibility(View.VISIBLE);
+		btOption.setVisibility(View.VISIBLE);
+		btOption.setText(getResources().getString(R.string.hideOption));
+	}
+
+	private void resetView_keyword() {
+		etKeyword.setVisibility(View.VISIBLE);
+		etPoiType.setVisibility(View.VISIBLE);
+		etCity.setVisibility(View.VISIBLE);
+		etFenceSize.setVisibility(View.VISIBLE);
+	}
+
 	/**
 	 * 添加围栏
 	 * 
@@ -595,20 +551,21 @@ public class GeoFence_Nearby_Activity extends CheckPermissionsActivity
 	 *
 	 */
 	private void addFence() {
-		addNearbyFence();
+		addKeywordFence();
 	}
 
+
 	/**
-	 * 添加周边围栏
+	 * 添加关键字围栏
 	 * 
 	 * @since 3.2.0
 	 * @author hongming.wang
 	 *
 	 */
-	private void addNearbyFence() {
+	private void addKeywordFence() {
 		String customId = etCustomId.getText().toString();
-		String searchRadiusStr = etRadius.getText().toString();
 		String keyword = etKeyword.getText().toString();
+		String city = etCity.getText().toString();
 		String poiType = etPoiType.getText().toString();
 		String sizeStr = etFenceSize.getText().toString();
 		int size = 10;
@@ -619,22 +576,12 @@ public class GeoFence_Nearby_Activity extends CheckPermissionsActivity
 			}
 		}
 
-		if (null == centerLatLng) {
+		if ((TextUtils.isEmpty(keyword)&&TextUtils.isEmpty(poiType)) 
+				|| TextUtils.isEmpty(poiType)) {
 			Toast.makeText(getApplicationContext(), "参数不全", Toast.LENGTH_SHORT)
 					.show();
 			return;
 		}
-		DPoint centerPoint = new DPoint(centerLatLng.latitude,
-				centerLatLng.longitude);
-		
-		float aroundRadius = 3000F;
-		if(!TextUtils.isEmpty(searchRadiusStr)){
-			try{
-				aroundRadius = Float.parseFloat(searchRadiusStr);
-			}catch(Throwable e){
-			}
-		}
-		fenceClient.addGeoFence(keyword, poiType, centerPoint, aroundRadius,
-				size, customId);
+		fenceClient.addGeoFence(keyword, poiType, city, size, customId);
 	}
 }

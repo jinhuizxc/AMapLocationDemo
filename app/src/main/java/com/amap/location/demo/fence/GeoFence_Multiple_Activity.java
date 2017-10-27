@@ -1,5 +1,5 @@
 
-package com.amap.location.demo;
+package com.amap.location.demo.fence;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,6 +28,9 @@ import com.amap.api.maps.model.Marker;
 import com.amap.api.maps.model.MarkerOptions;
 import com.amap.api.maps.model.MyLocationStyle;
 import com.amap.api.maps.model.PolygonOptions;
+import com.amap.location.demo.CheckPermissionsActivity;
+import com.amap.location.demo.Const;
+import com.amap.location.demo.R;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
