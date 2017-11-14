@@ -28,6 +28,11 @@ import com.amap.api.maps.model.Marker;
 import com.amap.api.maps.model.MarkerOptions;
 import com.amap.api.maps.model.MyLocationStyle;
 import com.amap.api.maps.model.PolygonOptions;
+import com.amap.api.services.core.LatLonPoint;
+import com.amap.api.services.geocoder.GeocodeResult;
+import com.amap.api.services.geocoder.GeocodeSearch;
+import com.amap.api.services.geocoder.RegeocodeQuery;
+import com.amap.api.services.geocoder.RegeocodeResult;
 import com.amap.location.demo.CheckPermissionsActivity;
 import com.amap.location.demo.Const;
 import com.amap.location.demo.R;
@@ -73,6 +78,7 @@ public class GeoFence_Round_Activity extends CheckPermissionsActivity
 	private View lyOption;
 	
 	private TextView tvGuide;
+	private TextView tvAddress;
 	private TextView tvResult;
 	
 	private EditText etCustomId;
@@ -134,6 +140,7 @@ public class GeoFence_Round_Activity extends CheckPermissionsActivity
 		btAddFence = (Button) findViewById(R.id.bt_addFence);
 		btOption = (Button) findViewById(R.id.bt_option);
 		tvGuide = (TextView) findViewById(R.id.tv_guide);
+		tvAddress = (TextView) findViewById(R.id.tv_address);
 		tvResult = (TextView) findViewById(R.id.tv_result);
 		tvResult.setVisibility(View.GONE);
 		etCustomId = (EditText) findViewById(R.id.et_customId);
@@ -448,14 +455,55 @@ public class GeoFence_Round_Activity extends CheckPermissionsActivity
 		}
 	};
 
+	/**
+	 * 地图图层点击监听
+	 * @param latLng
+	 */
 	@Override
 	public void onMapClick(LatLng latLng) {
-		markerOption.icon(ICON_YELLOW);
+		markerOption.icon(ICON_RED);
 		centerLatLng = latLng;
 		addCenterMarker(centerLatLng);
 		tvGuide.setBackgroundColor(getResources().getColor(R.color.gary));
-		tvGuide.setText("选中的坐标：" + centerLatLng.longitude + ","
-				+ centerLatLng.latitude);
+		tvGuide.setText("选中的坐标：" + centerLatLng.latitude + ","
+				+ centerLatLng.longitude);
+		Log.e("选中的坐标", " " + centerLatLng.latitude + centerLatLng.longitude);
+		// 位置编码,但是方法不执行啊，rcode = 1000 或者1008 都没得。
+		latlng2Address(centerLatLng.latitude,centerLatLng.longitude);
+	}
+
+	private void latlng2Address(double lat, double lng) {
+		Log.e("安全区域", "方法执行");
+		GeocodeSearch geocodeSearch = new GeocodeSearch(GeoFence_Round_Activity.this);
+		geocodeSearch.setOnGeocodeSearchListener(new GeocodeSearch.OnGeocodeSearchListener() {
+			@Override
+			public void onRegeocodeSearched(RegeocodeResult result, int rCode) {
+				if (rCode == 1000) {    // 之前是1000 ，现在怎么是1008
+					Log.e("安全区域", "rCode =" + rCode);
+					if (result != null && result.getRegeocodeAddress() != null
+							&& result.getRegeocodeAddress().getFormatAddress() != null) {
+						if(result.getRegeocodeAddress().getFormatAddress().equals("")) {
+//							showFenceAddress("没有地址");
+						}else {
+							String addressName = result.getRegeocodeAddress().getFormatAddress()
+									+ "附近";
+							tvAddress.setText(addressName);
+							Log.e("位置", "位置" + addressName);
+						}
+
+					} else {
+
+					}
+				}
+			}
+
+			@Override
+			public void onGeocodeSearched(GeocodeResult geocodeResult, int i) {
+
+			}
+		});
+		RegeocodeQuery query = new RegeocodeQuery(new LatLonPoint(lat,lng), 200,GeocodeSearch.GPS);
+		geocodeSearch.getFromLocationAsyn(query);
 	}
 
 	/**

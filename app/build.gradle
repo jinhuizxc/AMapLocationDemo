@@ -42,4 +42,5 @@ android {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
+    compile files('libs/AMap_Search_V3.3.0_20160616.jar')
 }
